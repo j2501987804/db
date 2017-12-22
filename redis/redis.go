@@ -11,8 +11,8 @@ var (
 	pool *redis.Pool
 )
 
-// Startup 启动redis链接
-func Startup(url string) {
+// Start 启动redis链接
+func Start(url string) {
 	pool = newPool(url)
 
 	// ping
