@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	conn   *sql.DB
+	// Conn mssql DB connection
+	Conn   *sql.DB
 	config *Config
 )
 
@@ -20,47 +21,49 @@ var (
 type Config struct {
 	ConnectionTimeout  int    `json:"ConnectionTimeout"`
 	MaxOpenConnections int    `json:"MaxOpenConnections"`
+	Host               string `json:"Host"`
 	Usr                string `json:"Usr"`
 	Pass               string `json:"Pass"`
-	ProcPass           string `json:"ProcPass"`
+	DB                 string `json:"DB"`
 	EncryptEnabled     bool   `json:"EncryptEnabled"`
 }
 
 // Startup 启动
-func Startup(db string, host string) bool {
+func Startup(config *Config) bool {
 	query := url.Values{}
 	query.Add("connection timeout", fmt.Sprintf("%d", config.ConnectionTimeout))
-	query.Add("database", db)
+	query.Add("database", config.DB)
 
 	var connectionString string
 	if config.EncryptEnabled {
 		u := &url.URL{
-			Scheme: "sqlserver",
+			Scheme: "mssql",
 			User:   url.UserPassword(config.Usr, config.Pass),
-			Host:   host,
+			Host:   config.Host,
 			// Path:  instance, // if connecting to an instance instead of a port
 			RawQuery: query.Encode(),
 		}
 
 		connectionString = u.String()
 	} else {
-		connectionString = fmt.Sprintf("sqlserver://%s:%s@%s?database=%s&connection+timeout=%d&log=63&encrypt=disable", config.Usr, config.Pass, host, db, config.ConnectionTimeout)
+		connectionString = fmt.Sprintf("sqlserver://%s:%s@%s?database=%s&connection+timeout=%d&log=63&encrypt=disable", config.Usr, config.Pass, config.Host, config.DB, config.ConnectionTimeout)
 	}
 
 	dbConn, err := sql.Open("sqlserver", connectionString)
 	if err != nil {
-		log.Fatalln(db, "Cannot connect: ", err.Error())
+		log.Fatalln(config.DB, "Cannot connect: ", err.Error())
 		return false
 	}
 
 	err = dbConn.Ping()
 	if err != nil {
-		log.Fatalln(db, "Cannot ping: ", err.Error())
+		log.Fatalln(config.DB, "Cannot ping: ", err.Error())
 		return false
 	}
 
 	dbConn.SetMaxOpenConns(config.MaxOpenConnections)
-	log.Printf("DB %s connected.\n", db)
+	Conn = dbConn
+	log.Printf("DB %s connected.\n", config.DB)
 	return true
 }
 
