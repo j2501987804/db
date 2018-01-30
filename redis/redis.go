@@ -29,7 +29,7 @@ func Get() redis.Conn {
 
 func newPool(addr string) *redis.Pool {
 	return &redis.Pool{
-		MaxIdle:     3,
+		MaxIdle:     5,
 		MaxActive:   100,
 		Wait:        true,
 		IdleTimeout: 240 * time.Second,
