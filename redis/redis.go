@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -12,8 +13,8 @@ var (
 )
 
 // Start 启动redis链接
-func Start(url string) {
-	pool = newPool(url)
+func Start(url string, pwd string) {
+	pool = newPool(url, pwd)
 
 	// ping
 	conn := pool.Get()
@@ -27,7 +28,7 @@ func Get() redis.Conn {
 	return pool.Get()
 }
 
-func newPool(addr string) *redis.Pool {
+func newPool(addr string, pwd string) *redis.Pool {
 	return &redis.Pool{
 		MaxIdle:     5,
 		MaxActive:   100,
@@ -35,7 +36,17 @@ func newPool(addr string) *redis.Pool {
 		IdleTimeout: 240 * time.Second,
 		Dial: func() (redis.Conn, error) {
 			log.Println("open redis...")
-			return redis.Dial("tcp", addr)
+			con, err := redis.Dial("tcp", addr)
+			if err != nil {
+				fmt.Println(err)
+			} else if len(pwd) != 0 {
+				_, err = con.Do("AUTH", pwd)
+				if err != nil {
+					fmt.Println(err)
+				}
+			}
+
+			return con, err
 		},
 		TestOnBorrow: func(c redis.Conn, t time.Time) error {
 			if time.Since(t) < time.Minute {
