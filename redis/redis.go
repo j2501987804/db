@@ -17,9 +17,16 @@ func Start(url string, pwd string) {
 	pool = newPool(url, pwd)
 
 	// ping
-	conn := pool.Get()
-	if conn != nil {
-		log.Printf("redis =>[%s] established.", url)
+	for {
+		conn := pool.Get()
+		if conn.Err() == nil && conn != nil {
+			log.Printf("redis =>[%s] established.", url)
+			conn.Close()
+			break
+		} else {
+			log.Println("retry 2 seconds later ...")
+			time.Sleep(time.Duration(2) * time.Second)
+		}
 	}
 }
 
